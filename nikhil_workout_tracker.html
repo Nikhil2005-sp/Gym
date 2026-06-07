@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nikhil's Gym Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --surface3: #222222;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #c8f135;
+    --accent2: #a8d120;
+    --accent-dim: rgba(200,241,53,0.12);
+    --accent-dim2: rgba(200,241,53,0.06);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --done-bg: rgba(200,241,53,0.08);
+    --done-border: rgba(200,241,53,0.25);
+    --red: #ff5a5a;
+    --red-dim: rgba(255,90,90,0.1);
+    --blue: #5a9fff;
+    --blue-dim: rgba(90,159,255,0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text2); font-size: 1rem; margin-left: 8px; }
+  .header-stats {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-pill .val { color: var(--accent); font-weight: 500; }
+  .progress-ring { position: relative; width: 36px; height: 36px; }
+  .progress-ring svg { transform: rotate(-90deg); }
+  .progress-ring .track { fill: none; stroke: var(--surface3); stroke-width: 3; }
+  .progress-ring .fill { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+  .progress-ring .pct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; color: var(--accent); font-weight: 500;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 3rem 2rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    line-height: 0.95;
+    letter-spacing: 0.03em;
+    margin-bottom: 1rem;
+  }
+  .hero-title .line2 { color: var(--accent); }
+  .hero-meta {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .meta-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); }
+  .meta-val { font-size: 0.9rem; color: var(--text); font-weight: 500; }
+
+  /* DAY NAV */
+  .day-nav {
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .day-nav::-webkit-scrollbar { display: none; }
+  .day-btn {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 80px;
+  }
+  .day-btn:hover { border-color: var(--border2); background: var(--surface2); }
+  .day-btn.active { border-color: var(--accent); background: var(--accent-dim); }
+  .day-btn.completed { border-color: var(--done-border); background: var(--done-bg); }
+  .day-btn .day-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--text2);
+    line-height: 1;
+  }
+  .day-btn.active .day-num { color: var(--accent); }
+  .day-btn.completed .day-num { color: var(--accent); }
+  .day-btn .day-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-top: 3px; }
+  .day-btn .day-check { font-size: 0.7rem; color: var(--accent); margin-top: 2px; }
+  .day-btn.rest-btn { opacity: 0.5; }
+  .day-btn.rest-btn.active { opacity: 1; }
+
+  /* MAIN */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  /* DAY PANEL */
+  .day-panel { display: none; }
+  .day-panel.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+  .panel-subtitle { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
+  .panel-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.02em;
+  }
+  .btn:hover { background: var(--surface3); border-color: var(--text3); }
+  .btn.btn-accent {
+    background: var(--accent);
+    color: #0a0a0a;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn.btn-accent:hover { background: var(--accent2); }
+  .btn.btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border-color: rgba(255,90,90,0.2);
+  }
+  .btn.btn-danger:hover { background: rgba(255,90,90,0.18); }
+
+  /* SECTION */
+  .section-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* EXERCISE LIST */
+  .exercise-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 2rem; }
+
+  .exercise-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .exercise-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--border2);
+    border-radius: 3px 0 0 3px;
+    transition: background 0.25s;
+  }
+  .exercise-row.done {
+    background: var(--done-bg);
+    border-color: var(--done-border);
+  }
+  .exercise-row.done::before { background: var(--accent); }
+  .exercise-row.done .ex-name { color: var(--text2); text-decoration: line-through; text-decoration-color: var(--text3); }
+
+  .ex-info { display: flex; flex-direction: column; gap: 4px; }
+  .ex-name { font-size: 0.95rem; font-weight: 500; color: var(--text); transition: color 0.2s; }
+  .ex-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ex-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    color: var(--text2);
+  }
+  .exercise-row.done .ex-tag {
+    background: rgba(200,241,53,0.06);
+    border-color: rgba(200,241,53,0.15);
+    color: var(--accent2);
+  }
+  .ex-equip {
+    font-size: 0.7rem;
+    color: var(--text3);
+  }
+
+  .row-btns { display: flex; gap: 6px; align-items: center; }
+  .mark-btn {
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .mark-btn.done-btn {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #0a0a0a;
+    font-weight: 600;
+  }
+  .mark-btn.done-btn:hover { background: var(--accent2); }
+  .mark-btn:not(.done-btn):hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
+  .rest-mark-btn {
+    border: 1px solid rgba(255,90,90,0.2);
+    background: var(--red-dim);
+    color: var(--red);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: none;
+  }
+  .exercise-row.done .rest-mark-btn { display: block; }
+  .exercise-row.done .mark-btn:not(.done-btn) { display: none; }
+  .rest-mark-btn:hover { background: rgba(255,90,90,0.18); }
+
+  /* PROGRESS BAR */
+  .day-progress {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 100px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .progress-label span { color: var(--accent); }
+
+  /* CORE SECTION */
+  .core-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue-dim);
+    border: 1px solid rgba(90,159,255,0.2);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    color: var(--blue);
+    margin-bottom: 12px;
+  }
+
+  /* REST DAY */
+  .rest-day {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  .rest-icon { font-size: 4rem; margin-bottom: 1rem; }
+  .rest-day h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.05em;
+    color: var(--text2);
+    margin-bottom: 0.5rem;
+  }
+  .rest-day p { color: var(--text3); font-size: 0.9rem; max-width: 300px; margin: 0 auto; line-height: 1.6; }
+
+  /* STATS SUMMARY */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .stat-card .s-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; }
+  .stat-card .s-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 0.03em; color: var(--text); line-height: 1; }
+  .stat-card .s-sub { font-size: 0.72rem; color: var(--text3); margin-top: 3px; }
+  .stat-card.accent-card { border-color: var(--done-border); background: var(--done-bg); }
+  .stat-card.accent-card .s-val { color: var(--accent); }
+
+  /* NOTIFICATION TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--accent);
+    color: #0a0a0a;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 10px 20px;
+    border-radius: 100px;
+    transition: transform 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    header { padding: 0 1rem; }
+    .hero, .day-nav, main { padding-left: 1rem; padding-right: 1rem; }
+    .header-stats .stat-pill:nth-child(2) { display: none; }
+    .exercise-row { grid-template-columns: 1fr; }
+    .row-btns { justify-content: flex-end; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NIKHIL <span>/ WORKOUT TRACKER</span></div>
+  <div class="header-stats">
+    <div class="stat-pill">73 kg <span class="val">· 20Y</span></div>
+    <div class="stat-pill">Goal: <span class="val">Fat Loss</span></div>
+    <div class="progress-ring">
+      <svg viewBox="0 0 36 36" width="36" height="36">
+        <circle class="track" cx="18" cy="18" r="15.5"/>
+        <circle class="fill" cx="18" cy="18" r="15.5" id="globalRingFill"
+          stroke-dasharray="97.4"
+          stroke-dashoffset="97.4"/>
+      </svg>
+      <div class="pct" id="globalPct">0%</div>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-title">
+    YOUR<br><span class="line2">TRAINING PLAN</span>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="meta-label">Split</span><span class="meta-val">Push / Pull / Legs × 2</span></div>
+    <div class="meta-item"><span class="meta-label">Days</span><span class="meta-val">6 days/week</span></div>
+    <div class="meta-item"><span class="meta-label">Duration</span><span class="meta-val">~120 min/session</span></div>
+    <div class="meta-item"><span class="meta-label">Trainer</span><span class="meta-val">Santhosh Sir / Siddhu Sir</span></div>
+    <div class="meta-item"><span class="meta-label">Gym</span><span class="meta-val">WRD LITE · MEM #1878</span></div>
+  </div>
+</div>
+
+<div class="day-nav" id="dayNav">
+  <button class="day-btn active" onclick="showDay(0)" id="nav0">
+    <div class="day-num">D1</div>
+    <div class="day-label">Legs A</div>
+    <div class="day-check" id="chk0"></div>
+  </button>
+  <button class="day-btn" onclick="showDay(1)" id="nav1">
+    <div class="day-num">D2</div>
+    <div class="day-label">Push A</div>
+    <div class="day-check" id="chk1"></div>
+  </button>
+  <button class="day-btn" onclick="showDay(2)" id="nav2">
+    <div class="day-num">D3</div>
+    <div class="day-label">Pull A</div>
+    <div class="day-check" id="chk2"></div>
+  </button>
+  <button class="day-btn" onclick="showDay(3)" id="nav3">
+    <div class="day-num">D4</div>
+    <div class="day-label">Legs B</div>
+    <div class="day-check" id="chk3"></div>
+  </button>
+  <button class="day-btn" onclick="showDay(4)" id="nav4">
+    <div class="day-num">D5</div>
+    <div class="day-label">Push B</div>
+    <div class="day-check" id="chk4"></div>
+  </button>
+  <button class="day-btn" onclick="showDay(5)" id="nav5">
+    <div class="day-num">D6</div>
+    <div class="day-label">Pull B</div>
+    <div class="day-check" id="chk5"></div>
+  </button>
+  <button class="day-btn rest-btn" onclick="showDay(6)" id="nav6">
+    <div class="day-num">D7</div>
+    <div class="day-label">Rest</div>
+  </button>
+</div>
+
+<main id="mainContent"></main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const days = [
+  {
+    id: 0,
+    title: "Day 1 — Legs A",
+    subtitle: "Lower Body · Quads / Hamstrings / Calves · ~120 min",
+    tip: "Focus on form with bodyweight squats before loading weight.",
+    exercises: [
+      { name: "Bodyweight Squats", sets: 5, reps: "20", equip: "Bodyweight" },
+      { name: "Dumbbell Squats", sets: 4, reps: "12", equip: "Dumbbells" },
+      { name: "Walking Lunges / Split Squats", sets: 4, reps: "12 each", equip: "Dumbbells" },
+      { name: "Hamstring Curls", sets: 3, reps: "10", equip: "Hamstring Curl Machine" },
+      { name: "Calf Raises", sets: 4, reps: "20", equip: "Seated Calf Raise Machine" },
+    ],
+    core: [
+      { name: "Side Plank", sets: 3, reps: "30–60s hold", equip: "Bodyweight" },
+      { name: "Plank", sets: 3, reps: "30–60s hold", equip: "Bodyweight" },
+    ]
+  },
+  {
+    id: 1,
+    title: "Day 2 — Push A",
+    subtitle: "Chest / Shoulders / Triceps · ~120 min",
+    tip: "Keep rest times to 60s between sets for maximum fat burn.",
+    exercises: [
+      { name: "Push-Ups", sets: 4, reps: "10", equip: "Bodyweight" },
+      { name: "Flat Bench Press", sets: 5, reps: "12", equip: "Dumbbells / Barbell" },
+      { name: "Dumbbell Shoulder Press", sets: 3, reps: "12", equip: "Dumbbells" },
+      { name: "Side Lateral Raises", sets: 3, reps: "12", equip: "Dumbbells" },
+      { name: "Tricep Pushdown", sets: 3, reps: "15", equip: "Cable Machine" },
+      { name: "Overhead Tricep Extension", sets: 3, reps: "15", equip: "Cable Machine" },
+    ],
+    core: [
+      { name: "Dead Bug", sets: 3, reps: "10", equip: "Bodyweight" },
+      { name: "Bird Dog", sets: 3, reps: "10", equip: "Bodyweight" },
+    ]
+  },
+  {
+    id: 2,
+    title: "Day 3 — Pull A",
+    subtitle: "Back / Biceps · ~120 min",
+    tip: "Keep your back flat on all rows. Squeeze shoulder blades at the top.",
+    exercises: [
+      { name: "Pull-Ups / Assisted Pull-Ups", sets: 3, reps: "10", equip: "Pull-Up Bar / Machine" },
+      { name: "Deadlift", sets: 4, reps: "7", equip: "Barbell" },
+      { name: "Front Lat Pulldown", sets: 4, reps: "12", equip: "Lat Pull Machine" },
+      { name: "Seated Cable Rows", sets: 3, reps: "12", equip: "Seated Cable Row Machine" },
+      { name: "Dumbbell Rows", sets: 4, reps: "12", equip: "Dumbbells" },
+      { name: "Barbell / EZ Bar Bicep Curls", sets: 5, reps: "15", equip: "Barbell / EZ Bar" },
+      { name: "Hammer Curls", sets: 3, reps: "15", equip: "Dumbbells" },
+      { name: "Hyperextensions", sets: 4, reps: "10", equip: "Hyperextension Machine" },
+    ],
+    core: [
+      { name: "Dead Bug", sets: 3, reps: "10", equip: "Bodyweight" },
+      { name: "Bird Dog", sets: 3, reps: "10", equip: "Bodyweight" },
+    ]
+  },
+  {
+    id: 3,
+    title: "Day 4 — Legs B",
+    subtitle: "Lower Body · Quads / Glutes / Hamstrings / Calves · ~120 min",
+    tip: "Hip thrusts are key for glutes — squeeze hard at the top of each rep.",
+    exercises: [
+      { name: "Bodyweight Squats", sets: 3, reps: "20", equip: "Bodyweight" },
+      { name: "Barbell / Dumbbell Squats", sets: 5, reps: "10", equip: "Barbell / Dumbbells" },
+      { name: "Leg Extensions", sets: 4, reps: "12", equip: "Seated Extension Machine" },
+      { name: "Hamstring Curls", sets: 3, reps: "10", equip: "Hamstring Curl Machine" },
+      { name: "Hip Thrusts", sets: 4, reps: "10", equip: "Hip Thrust Machine" },
+      { name: "Calf Raises", sets: 4, reps: "20", equip: "Seated Calf Raise Machine" },
+    ],
+    core: [
+      { name: "Side Plank", sets: 3, reps: "30–60s hold", equip: "Bodyweight" },
+      { name: "Plank", sets: 3, reps: "40s hold", equip: "Bodyweight" },
+    ]
+  },
+  {
+    id: 4,
+    title: "Day 5 — Push B",
+    subtitle: "Chest / Shoulders / Triceps (Variation) · ~120 min",
+    tip: "Skull crushers require good form — go lighter until you're confident.",
+    exercises: [
+      { name: "Push-Ups", sets: 4, reps: "10", equip: "Bodyweight" },
+      { name: "Flat Bench Press", sets: 5, reps: "12", equip: "Dumbbells / Barbell" },
+      { name: "Dumbbell Shoulder Press", sets: 3, reps: "12", equip: "Dumbbells" },
+      { name: "Side Lateral Raises", sets: 3, reps: "12", equip: "Dumbbells" },
+      { name: "Reverse Flys (Pec Dec)", sets: 3, reps: "10", equip: "Pec Dec Machine" },
+      { name: "Skull Crushers", sets: 3, reps: "10", equip: "EZ Bar / Zigzag Bar" },
+      { name: "Tricep Pushdown", sets: 5, reps: "15", equip: "Cable Machine" },
+      { name: "Overhead Tricep Extension", sets: 3, reps: "15", equip: "Cable Machine" },
+    ],
+    core: [
+      { name: "Dead Bug", sets: 3, reps: "10", equip: "Bodyweight" },
+      { name: "Bird Dog", sets: 3, reps: "10", equip: "Bodyweight" },
+    ]
+  },
+  {
+    id: 5,
+    title: "Day 6 — Pull B",
+    subtitle: "Back / Biceps (Variation) · ~120 min",
+    tip: "Same structure as Day 3 — try to increase weight or reps slightly.",
+    exercises: [
+      { name: "Pull-Ups / Assisted Pull-Ups", sets: 3, reps: "10", equip: "Pull-Up Bar / Machine" },
+      { name: "Deadlift", sets: 4, reps: "7", equip: "Barbell" },
+      { name: "Front Lat Pulldown", sets: 4, reps: "12", equip: "Lat Pull Machine" },
+      { name: "Seated Cable Rows", sets: 3, reps: "12", equip: "Seated Cable Row Machine" },
+      { name: "Dumbbell Rows", sets: 4, reps: "12", equip: "Dumbbells" },
+      { name: "Barbell / EZ Bar Bicep Curls", sets: 5, reps: "15", equip: "Barbell / EZ Bar" },
+      { name: "Hammer Curls", sets: 3, reps: "15", equip: "Dumbbells" },
+      { name: "Hyperextensions", sets: 4, reps: "10", equip: "Hyperextension Machine" },
+    ],
+    core: [
+      { name: "Side Plank", sets: 3, reps: "30–60s hold", equip: "Bodyweight" },
+      { name: "Plank", sets: 3, reps: "40s hold", equip: "Bodyweight" },
+    ]
+  }
+];
+
+// State
+let state = {};
+try {
+  const saved = localStorage.getItem('nikhil_gym_state');
+  if (saved) state = JSON.parse(saved);
+} catch(e) {}
+
+function saveState() {
+  try { localStorage.setItem('nikhil_gym_state', JSON.stringify(state)); } catch(e) {}
+}
+
+function getKey(dayId, type, idx) {
+  return `d${dayId}_${type}_${idx}`;
+}
+
+function isDone(dayId, type, idx) {
+  return !!state[getKey(dayId, type, idx)];
+}
+
+function toggleDone(dayId, type, idx) {
+  const key = getKey(dayId, type, idx);
+  state[key] = !state[key];
+  saveState();
+  renderDay(dayId);
+  updateGlobalProgress();
+  updateDayNav();
+  if (state[key]) showToast('✓ Marked as done!');
+  else showToast('↩ Unmarked');
+}
+
+function markAllDone(dayId) {
+  const day = days[dayId];
+  day.exercises.forEach((_, i) => { state[getKey(dayId, 'ex', i)] = true; });
+  day.core.forEach((_, i) => { state[getKey(dayId, 'core', i)] = true; });
+  saveState();
+  renderDay(dayId);
+  updateGlobalProgress();
+  updateDayNav();
+  showToast('🔥 Day ' + (dayId+1) + ' complete!');
+}
+
+function resetDay(dayId) {
+  const day = days[dayId];
+  day.exercises.forEach((_, i) => { delete state[getKey(dayId, 'ex', i)]; });
+  day.core.forEach((_, i) => { delete state[getKey(dayId, 'core', i)]; });
+  saveState();
+  renderDay(dayId);
+  updateGlobalProgress();
+  updateDayNav();
+  showToast('↩ Day reset');
+}
+
+function getDayProgress(dayId) {
+  const day = days[dayId];
+  const total = day.exercises.length + day.core.length;
+  let done = 0;
+  day.exercises.forEach((_, i) => { if (isDone(dayId, 'ex', i)) done++; });
+  day.core.forEach((_, i) => { if (isDone(dayId, 'core', i)) done++; });
+  return { done, total };
+}
+
+function renderExercise(dayId, type, idx, ex) {
+  const done = isDone(dayId, type, idx);
+  return `
+    <div class="exercise-row ${done ? 'done' : ''}" id="row_${dayId}_${type}_${idx}">
+      <div class="ex-info">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-meta">
+          <span class="ex-tag">${ex.sets} sets</span>
+          <span class="ex-tag">${ex.reps} reps</span>
+          <span class="ex-equip">${ex.equip}</span>
+        </div>
+      </div>
+      <div class="row-btns">
+        <button class="mark-btn ${done ? 'done-btn' : ''}" onclick="toggleDone(${dayId},'${type}',${idx})">
+          ${done ? '✓ Done' : 'Mark Done'}
+        </button>
+        <button class="rest-mark-btn" onclick="toggleDone(${dayId},'${type}',${idx})">Reset</button>
+      </div>
+    </div>`;
+}
+
+function renderDay(dayId) {
+  if (dayId === 6) {
+    document.getElementById(`panel_${dayId}`).innerHTML = `
+      <div class="rest-day">
+        <div class="rest-icon">😴</div>
+        <h2>REST DAY</h2>
+        <p>Sleep 7–8 hours. Stretch lightly. Let your muscles recover. This is when the real growth happens.</p>
+      </div>`;
+    return;
+  }
+  const day = days[dayId];
+  const prog = getDayProgress(dayId);
+  const pct = Math.round((prog.done / prog.total) * 100);
+
+  let html = `
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">${day.title}</div>
+        <div class="panel-subtitle">${day.subtitle}</div>
+      </div>
+      <div class="panel-actions">
+        <button class="btn" onclick="markAllDone(${dayId})">Mark All Done</button>
+        <button class="btn btn-danger" onclick="resetDay(${dayId})">Reset Day</button>
+      </div>
+    </div>
+
+    <div class="day-progress">
+      <div class="progress-label"><span>${prog.done}</span>/${prog.total} exercises</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label"><span>${pct}%</span></div>
+    </div>
+
+    <div class="section-label">Main Exercises</div>
+    <div class="exercise-list">
+      ${day.exercises.map((ex, i) => renderExercise(dayId, 'ex', i, ex)).join('')}
+    </div>
+
+    <div class="core-badge">⚡ Core Workout — Alternate Days</div>
+    <div class="section-label">Core Work</div>
+    <div class="exercise-list">
+      ${day.core.map((ex, i) => renderExercise(dayId, 'core', i, ex)).join('')}
+    </div>
+
+    <div class="section-label">Tip</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;font-size:0.85rem;color:var(--text2);line-height:1.6;">
+      💡 ${day.tip}
+    </div>`;
+
+  document.getElementById(`panel_${dayId}`).innerHTML = html;
+}
+
+function updateGlobalProgress() {
+  let totalEx = 0, doneEx = 0;
+  days.forEach(day => {
+    const p = getDayProgress(day.id);
+    totalEx += p.total; doneEx += p.done;
+  });
+  const pct = totalEx > 0 ? Math.round((doneEx / totalEx) * 100) : 0;
+  const circ = 97.4;
+  const offset = circ - (pct / 100) * circ;
+  document.getElementById('globalRingFill').style.strokeDashoffset = offset;
+  document.getElementById('globalPct').textContent = pct + '%';
+}
+
+function updateDayNav() {
+  days.forEach(day => {
+    const p = getDayProgress(day.id);
+    const chk = document.getElementById('chk' + day.id);
+    const nav = document.getElementById('nav' + day.id);
+    if (p.done === p.total && p.total > 0) {
+      nav.classList.add('completed');
+      chk.textContent = '✓';
+    } else {
+      nav.classList.remove('completed');
+      chk.textContent = '';
+    }
+  });
+}
+
+let currentDay = 0;
+function showDay(id) {
+  document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.day-btn').forEach((b, i) => {
+    b.classList.remove('active');
+    if (i === id) b.classList.add('active');
+  });
+  document.getElementById(`panel_${id}`).classList.add('active');
+  currentDay = id;
+  renderDay(id);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// Build panels
+const main = document.getElementById('mainContent');
+for (let i = 0; i <= 6; i++) {
+  const div = document.createElement('div');
+  div.className = 'day-panel' + (i === 0 ? ' active' : '');
+  div.id = `panel_${i}`;
+  main.appendChild(div);
+}
+
+// Initial render
+days.forEach(d => renderDay(d.id));
+renderDay(6);
+updateGlobalProgress();
+updateDayNav();
+renderDay(0);
+</script>
+</body>
+</html>
